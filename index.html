@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 节奏游戏谱面流速修改器 🎵</title>
+    <title>Phigros谱面流速修改器</title>
     <style>
         * {
             margin: 0;
@@ -12,262 +12,232 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0f0f0;
+            color: #333;
             min-height: 100vh;
             padding: 20px;
-            color: #333;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: white;
+            border-radius: 4px;
             overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         header {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background: #2c3e50;
             color: white;
-            padding: 30px;
-            text-align: center;
+            padding: 15px 20px;
         }
         
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
+            font-size: 1.3rem;
+            text-align: center;
         }
         
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            padding: 30px;
+            padding: 20px;
         }
         
-        @media (max-width: 900px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .upload-section, .preview-section {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-        
-        .section-title {
-            font-size: 1.5rem;
-            color: #4a5568;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .section-title i {
-            font-size: 1.8rem;
-        }
-        
-        .file-upload-area {
-            border: 3px dashed #cbd5e0;
-            border-radius: 10px;
+        .upload-area {
+            border: 2px dashed #bdc3c7;
+            border-radius: 4px;
             padding: 40px 20px;
             text-align: center;
+            background: #f8f9fa;
             cursor: pointer;
-            transition: all 0.3s;
-            background: #f7fafc;
         }
         
-        .file-upload-area:hover {
-            border-color: #667eea;
-            background: #edf2f7;
-        }
-        
-        .file-upload-area.drag-over {
-            border-color: #667eea;
-            background: #e6fffa;
+        .upload-area:hover {
+            border-color: #3498db;
         }
         
         .upload-icon {
-            font-size: 3rem;
-            color: #667eea;
-            margin-bottom: 15px;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #7f8c8d;
         }
         
-        .file-info {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f1f5f9;
-            border-radius: 8px;
+        input[type="file"] {
             display: none;
         }
         
-        .file-info.show {
+        .controls-section {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .controls-section.show {
             display: block;
         }
         
+        .file-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
         .speed-control {
-            margin: 30px 0;
+            margin-bottom: 20px;
         }
         
         .speed-display {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         
         .speed-value {
-            font-size: 2.5rem;
+            font-size: 1.5rem;
             font-weight: bold;
-            color: #2d3748;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            color: #2c3e50;
         }
         
-        .original-speed {
-            color: #718096;
+        .multiplier-display {
+            background: #2c3e50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: monospace;
             font-size: 0.9rem;
         }
         
-        input[type="range"] {
+        .speed-slider {
             width: 100%;
-            height: 10px;
+            height: 5px;
             -webkit-appearance: none;
-            appearance: none;
-            background: linear-gradient(to right, #4fd1c5, #667eea);
-            border-radius: 5px;
+            background: #ddd;
+            border-radius: 2px;
             outline: none;
         }
         
-        input[type="range"]::-webkit-slider-thumb {
+        .speed-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 25px;
-            height: 25px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #2d3748;
+            background: #3498db;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            border: 3px solid white;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
         
-        .speed-markers {
+        .speed-range {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
-            color: #718096;
-            font-size: 0.9rem;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+        
+        .preview-section {
+            margin: 20px 0;
+        }
+        
+        .preview-title {
+            margin-bottom: 10px;
+            font-size: 1rem;
         }
         
         .preview-container {
             position: relative;
-            height: 400px;
-            background: linear-gradient(to bottom, #1a202c, #2d3748);
-            border-radius: 10px;
+            height: 350px;
+            background: #1a1a1a;
+            border-radius: 4px;
             overflow: hidden;
-            border: 3px solid #4a5568;
         }
         
         .judgement-line {
             position: absolute;
-            bottom: 100px;
+            bottom: 80px;
             left: 0;
             right: 0;
-            height: 4px;
-            background: linear-gradient(to right, #ff0080, #00ffcc);
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            height: 1px;
+            background: white;
         }
         
-        .tap-circle {
+        .note {
             position: absolute;
-            width: 50px;
-            height: 50px;
-            background: radial-gradient(circle at 30% 30%, #ff0080, #cc0066);
-            border-radius: 50%;
-            top: -50px;
+            width: 70px;
+            height: 10px;
+            background: #3498db;
             left: 50%;
             transform: translateX(-50%);
-            box-shadow: 0 0 30px rgba(255, 0, 128, 0.7);
-            transition: none;
+            top: -10px;
+            border-radius: 1px;
         }
         
-        .tap-circle.animating {
-            animation-duration: 2s;
+        .note.animating {
             animation-timing-function: linear;
             animation-iteration-count: infinite;
         }
         
         @keyframes fall {
-            0% { top: -50px; }
-            100% { top: calc(100% - 150px); }
+            0% { top: -10px; }
+            100% { top: calc(100% - 90px); }
         }
         
-        .controls {
-            display: flex;
-            gap: 15px;
+        .download-btn {
+            width: 100%;
+            padding: 12px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
             margin-top: 20px;
         }
         
-        button {
-            flex: 1;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+        .download-btn:hover {
+            background: #219653;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .download-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 0.9rem;
+            display: none;
         }
         
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
+        .status.show {
+            display: block;
         }
         
-        .btn-secondary:hover {
-            background: #cbd5e0;
+        .status.success {
+            background: #d4edda;
+            color: #155724;
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(11, 163, 96, 0.4);
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
         }
         
         .loading {
-            display: none;
             text-align: center;
             padding: 20px;
+            display: none;
         }
         
         .loading.show {
@@ -275,13 +245,13 @@
         }
         
         .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #667eea;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 25px;
+            height: 25px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 10px;
         }
         
         @keyframes spin {
@@ -289,234 +259,151 @@
             100% { transform: rotate(360deg); }
         }
         
-        .status-message {
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .status-message.show {
-            display: block;
-        }
-        
-        .status-success {
-            background: #c6f6d5;
-            color: #22543d;
-            border: 2px solid #9ae6b4;
-        }
-        
-        .status-error {
-            background: #fed7d7;
-            color: #742a2a;
-            border: 2px solid #fc8181;
-        }
-        
         footer {
             text-align: center;
-            padding: 20px;
-            color: #718096;
-            border-top: 1px solid #e2e8f0;
-            font-size: 0.9rem;
-        }
-        
-        .instructions {
-            background: #f7fafc;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        
-        .instructions h3 {
-            color: #4a5568;
-            margin-bottom: 10px;
-        }
-        
-        .instructions ul {
-            padding-left: 20px;
-            margin-bottom: 15px;
-        }
-        
-        .instructions li {
-            margin-bottom: 8px;
-        }
-        
-        .error-details {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 200px;
-            overflow-y: auto;
+            padding: 15px;
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎵 节奏游戏谱面流速修改器 🎵</h1>
-            <p class="subtitle">上传ZIP文件 → 可视化调整流速 → 下载修改后的谱面</p>
+            <h1>Phigros谱面流速修改器</h1>
         </header>
         
         <div class="main-content">
-            <!-- 上传和控制区域 -->
-            <div class="upload-section">
-                <h2 class="section-title">📁 谱面上传与设置</h2>
-                
-                <div class="file-upload-area" id="dropArea">
-                    <div class="upload-icon">📦</div>
-                    <h3>点击或拖拽ZIP文件到此区域</h3>
-                    <p>支持包含.json谱面文件的ZIP压缩包</p>
-                    <input type="file" id="fileInput" accept=".zip" style="display: none;">
-                </div>
-                
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p>上传Phigros谱面ZIP文件</p>
+                <input type="file" id="fileInput" accept=".zip">
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>处理中...</p>
+            </div>
+            
+            <div class="controls-section" id="controlsSection">
                 <div class="file-info" id="fileInfo">
-                    <div><strong>文件名:</strong> <span id="fileName">-</span></div>
-                    <div><strong>找到的JSON文件:</strong> <span id="jsonFileName">-</span></div>
-                    <div><strong>原始速度:</strong> <span id="originalSpeed">-</span></div>
-                    <div><strong>新速度:</strong> <span id="newSpeed">-</span></div>
+                    <div class="info-item">
+                        <span>文件:</span>
+                        <span id="fileName">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>原始速度:</span>
+                        <span id="originalSpeed">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>新速度:</span>
+                        <span id="newSpeed">-</span>
+                    </div>
                 </div>
                 
                 <div class="speed-control">
-                    <h2 class="section-title">⚡ 流速调整</h2>
                     <div class="speed-display">
-                        <div>
-                            <div class="speed-value" id="speedMultiplierValue">1.0x</div>
-                            <div class="original-speed">乘数: <span id="multiplierNumber">1.0</span></div>
-                        </div>
-                        <button class="btn-secondary" onclick="resetSpeed()">
-                            🔄 重置
-                        </button>
+                        <div class="speed-value" id="speedValue">1.00x</div>
+                        <div class="multiplier-display" id="multiplierValue">×1.00</div>
                     </div>
                     
-                    <input type="range" id="speedSlider" min="0.1" max="5" step="0.1" value="1.0">
+                    <input type="range" class="speed-slider" id="speedSlider" min="0.25" max="4" step="0.01" value="1.00">
                     
-                    <div class="speed-markers">
-                        <span>0.1x (超慢)</span>
-                        <span>1.0x (原速)</span>
-                        <span>5.0x (超快)</span>
+                    <div class="speed-range">
+                        <span>0.25x</span>
+                        <span>1.00x</span>
+                        <span>4.00x</span>
                     </div>
                 </div>
                 
-                <div class="instructions">
-                    <h3>💡 使用说明</h3>
-                    <ul>
-                        <li>上传包含谱面文件(.json)的ZIP压缩包</li>
-                        <li>拖动滑块调整流速，右侧实时预览</li>
-                        <li>点击"预览动画"查看下落效果</li>
-                        <li>满意后点击"下载修改后的ZIP"</li>
-                    </ul>
+                <div class="preview-section">
+                    <div class="preview-title">预览</div>
+                    <div class="preview-container">
+                        <div class="judgement-line"></div>
+                        <div class="note" id="note"></div>
+                    </div>
                 </div>
                 
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>处理中，请稍候...</p>
-                </div>
+                <button class="download-btn" id="downloadBtn" disabled>
+                    下载修改后的ZIP文件
+                </button>
                 
-                <div class="controls">
-                    <button class="btn-primary" onclick="startPreview()" id="previewBtn">
-                        ▶️ 预览动画
-                    </button>
-                    <button class="btn-success" onclick="downloadModifiedZip()" id="downloadBtn">
-                        💾 下载修改后的ZIP
-                    </button>
-                </div>
-            </div>
-            
-            <!-- 预览区域 -->
-            <div class="preview-section">
-                <h2 class="section-title">👁️ 流速预览</h2>
-                <p>调整滑块查看下落速度变化</p>
-                
-                <div class="preview-container">
-                    <div class="judgement-line"></div>
-                    <div class="tap-circle" id="tapCircle"></div>
-                </div>
-                
-                <div class="status-message" id="statusMessage"></div>
-                
-                <div class="controls" style="margin-top: 30px;">
-                    <button class="btn-secondary" onclick="stopPreview()">
-                        ⏹️ 停止动画
-                    </button>
-                    <button class="btn-secondary" onclick="speedTest()">
-                        ⚡ 速度测试
-                    </button>
-                </div>
+                <div class="status" id="status"></div>
             </div>
         </div>
         
         <footer>
-            <p>© 2024 节奏游戏谱面流速修改器 | 完全在浏览器中运行，不上传任何数据到服务器</p>
-            <p>基于 JSZip 和纯前端 JavaScript 技术构建</p>
+            <p>本工具完全在浏览器中运行，不会上传文件到服务器</p>
         </footer>
     </div>
-
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
         // 全局变量
         let originalZip = null;
-        let modifiedZip = null;
         let jsonFileName = null;
         let jsonContent = null;
         let originalSpeed = 1.0;
         let speedMultiplier = 1.0;
-        let animationInterval = null;
-        let isAnimating = false;
         
-        // DOM 元素
-        const dropArea = document.getElementById('dropArea');
+        // DOM元素
+        const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const controlsSection = document.getElementById('controlsSection');
         const fileInfo = document.getElementById('fileInfo');
         const speedSlider = document.getElementById('speedSlider');
-        const speedMultiplierValue = document.getElementById('speedMultiplierValue');
-        const multiplierNumber = document.getElementById('multiplierNumber');
-        const tapCircle = document.getElementById('tapCircle');
-        const loading = document.getElementById('loading');
-        const previewBtn = document.getElementById('previewBtn');
+        const speedValue = document.getElementById('speedValue');
+        const multiplierValue = document.getElementById('multiplierValue');
         const downloadBtn = document.getElementById('downloadBtn');
-        const statusMessage = document.getElementById('statusMessage');
+        const status = document.getElementById('status');
+        const note = document.getElementById('note');
+        
+        // 显示元素
         const fileNameSpan = document.getElementById('fileName');
-        const jsonFileNameSpan = document.getElementById('jsonFileName');
         const originalSpeedSpan = document.getElementById('originalSpeed');
         const newSpeedSpan = document.getElementById('newSpeed');
         
-        // 初始化事件监听
+        // 初始化
         function init() {
+            // 上传区域点击事件
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
             // 拖放事件
-            dropArea.addEventListener('click', () => fileInput.click());
-            dropArea.addEventListener('dragover', (e) => {
+            uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                dropArea.classList.add('drag-over');
+                uploadArea.style.borderColor = '#3498db';
             });
-            dropArea.addEventListener('dragleave', () => {
-                dropArea.classList.remove('drag-over');
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#bdc3c7';
             });
-            dropArea.addEventListener('drop', (e) => {
+            
+            uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
-                dropArea.classList.remove('drag-over');
+                uploadArea.style.borderColor = '#bdc3c7';
+                
                 if (e.dataTransfer.files.length) {
                     handleFileUpload(e.dataTransfer.files[0]);
                 }
             });
             
-            // 文件输入事件
+            // 文件选择事件
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length) {
                     handleFileUpload(e.target.files[0]);
                 }
             });
             
-            // 滑块事件
-            speedSlider.addEventListener('input', updateSpeed);
-            speedSlider.addEventListener('change', updateSpeed);
+            // 速度滑块事件 - 实时更新
+            speedSlider.addEventListener('input', () => {
+                updateSpeed();
+                updateAnimation();
+            });
             
-            // 初始化状态
-            updateSpeed();
+            // 初始化动画
+            startAnimation();
         }
         
         // 处理文件上传
@@ -526,8 +413,7 @@
                 return;
             }
             
-            fileNameSpan.textContent = file.name;
-            showLoading(true);
+            loading.classList.add('show');
             
             try {
                 // 读取ZIP文件
@@ -535,213 +421,254 @@
                 originalZip = await JSZip.loadAsync(arrayBuffer);
                 
                 // 查找JSON文件
-                const jsonFiles = Object.keys(originalZip.files).filter(name => 
-                    name.toLowerCase().endsWith('.json')
-                );
+                const jsonFiles = [];
+                originalZip.forEach((relativePath, fileEntry) => {
+                    if (!fileEntry.dir && relativePath.toLowerCase().endsWith('.json')) {
+                        jsonFiles.push(relativePath);
+                    }
+                });
                 
                 if (jsonFiles.length === 0) {
-                    throw new Error('在ZIP文件中未找到JSON文件');
+                    throw new Error('ZIP文件中未找到JSON文件');
                 }
                 
                 // 取第一个JSON文件
                 jsonFileName = jsonFiles[0];
-                jsonFileNameSpan.textContent = jsonFileName;
                 
-                // 读取并解析JSON
+                // 读取JSON文件
                 const jsonFile = originalZip.file(jsonFileName);
                 if (!jsonFile) {
                     throw new Error('无法读取JSON文件');
                 }
                 
                 const jsonText = await jsonFile.async('text');
-                jsonContent = JSON.parse(jsonText);
+                jsonContent = jsonText;
                 
-                // 查找speed字段
-                originalSpeed = findSpeedInObject(jsonContent);
+                // 使用C++逻辑查找第一个speed值
+                originalSpeed = findFirstSpeedWithCppLogic(jsonContent);
                 if (originalSpeed === null) {
                     originalSpeed = 1.0;
                     showStatus('未找到speed字段，使用默认速度1.0', 'error');
                 }
                 
+                // 更新显示
+                fileNameSpan.textContent = file.name;
                 originalSpeedSpan.textContent = originalSpeed.toFixed(2);
-                updateNewSpeed();
                 
-                // 显示文件信息
+                // 显示控制区域
+                controlsSection.classList.add('show');
                 fileInfo.classList.add('show');
                 
-                // 启用按钮
-                previewBtn.disabled = false;
+                // 启用下载按钮
                 downloadBtn.disabled = false;
                 
-                showStatus(`成功加载谱面文件: ${jsonFileName}`, 'success');
+                // 更新速度和预览
+                updateSpeed();
+                updateAnimation();
+                
+                showStatus('成功加载谱面', 'success');
                 
             } catch (error) {
-                showStatus(`文件处理失败: ${error.message}`, 'error');
+                showStatus(`处理失败: ${error.message}`, 'error');
                 console.error(error);
             } finally {
-                showLoading(false);
+                loading.classList.remove('show');
             }
         }
         
-        // 递归查找speed字段
-        function findSpeedInObject(obj, path = '') {
-            if (typeof obj !== 'object' || obj === null) {
-                return null;
-            }
+        // 严格按照C++逻辑查找第一个speed值
+        function findFirstSpeedWithCppLogic(jsonText) {
+            // 状态机实现，完全匹配C++代码逻辑
+            let state = 0; // 0=正常寻找"，1=找到"匹配key，2=匹配到speed读取数值
+            let current = '';
+            let speedValue = null;
+            let inSpeedKey = false;
             
-            // 如果是数组，遍历每个元素
-            if (Array.isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) {
-                    const result = findSpeedInObject(obj[i], `${path}[${i}]`);
-                    if (result !== null) {
-                        return result;
-                    }
-                }
-                return null;
-            }
-            
-            // 如果是对象，检查是否有speed字段
-            if ('speed' in obj && typeof obj.speed === 'number') {
-                return obj.speed;
-            }
-            
-            // 递归检查对象的每个属性
-            for (const key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    const result = findSpeedInObject(obj[key], `${path}.${key}`);
-                    if (result !== null) {
-                        return result;
-                    }
+            for (let i = 0; i < jsonText.length; i++) {
+                const ch = jsonText[i];
+                
+                switch (state) {
+                    case 0:
+                        if (ch === '"') {
+                            state = 1;
+                        }
+                        break;
+                        
+                    case 1:
+                        if (ch === '"') {
+                            if (current === 'speed') {
+                                inSpeedKey = true;
+                                state = 2;
+                            } else {
+                                state = 0;
+                            }
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                        break;
+                        
+                    case 2:
+                        if (ch === ':') {
+                            // 跳过冒号后的空格
+                            let j = i + 1;
+                            while (j < jsonText.length && (jsonText[j] === ' ' || jsonText[j] === '\n' || jsonText[j] === '\t')) {
+                                j++;
+                            }
+                            
+                            // 读取数字
+                            let numStr = '';
+                            let k = j;
+                            while (k < jsonText.length) {
+                                const c = jsonText[k];
+                                if ((c >= '0' && c <= '9') || c === '.' || c === '-') {
+                                    numStr += c;
+                                } else if (c === ',' || c === '}' || c === ' ' || c === '\n' || c === '\t') {
+                                    break;
+                                }
+                                k++;
+                            }
+                            
+                            if (numStr) {
+                                speedValue = parseFloat(numStr);
+                                return speedValue; // 找到第一个立即返回
+                            }
+                            
+                            state = 0;
+                            inSpeedKey = false;
+                        } else {
+                            // 如果不是冒号，重置状态
+                            state = 0;
+                            inSpeedKey = false;
+                        }
+                        break;
                 }
             }
             
             return null;
         }
         
-        // 递归修改speed字段
-        function modifySpeedInObject(obj, newSpeed, path = '') {
-            if (typeof obj !== 'object' || obj === null) {
-                return false;
-            }
+        // 严格按照C++逻辑修改speed值
+        function modifySpeedWithCppLogic(jsonText, multiplier) {
+            // 状态机实现，完全匹配C++代码逻辑
+            let state = 0;
+            let current = '';
+            let inSpeedKey = false;
+            let result = '';
+            let i = 0;
             
-            let modified = false;
-            
-            // 如果是数组，遍历每个元素
-            if (Array.isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) {
-                    if (modifySpeedInObject(obj[i], newSpeed, `${path}[${i}]`)) {
-                        modified = true;
-                    }
+            while (i < jsonText.length) {
+                const ch = jsonText[i];
+                
+                switch (state) {
+                    case 0:
+                        result += ch;
+                        if (ch === '"') {
+                            state = 1;
+                        }
+                        break;
+                        
+                    case 1:
+                        result += ch;
+                        if (ch === '"') {
+                            if (current === 'speed') {
+                                inSpeedKey = true;
+                                state = 2;
+                            } else {
+                                state = 0;
+                            }
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                        break;
+                        
+                    case 2:
+                        if (ch === ':') {
+                            result += ch;
+                            // 读取数值
+                            let j = i + 1;
+                            while (j < jsonText.length && (jsonText[j] === ' ' || jsonText[j] === '\n' || jsonText[j] === '\t')) {
+                                result += jsonText[j];
+                                j++;
+                            }
+                            
+                            // 读取数字字符串
+                            let numStr = '';
+                            let k = j;
+                            while (k < jsonText.length) {
+                                const c = jsonText[k];
+                                if ((c >= '0' && c <= '9') || c === '.' || c === '-') {
+                                    numStr += c;
+                                    k++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            
+                            if (numStr) {
+                                // 计算新值
+                                const oldValue = parseFloat(numStr);
+                                const newValue = oldValue * multiplier;
+                                result += newValue.toString();
+                                
+                                // 跳过已处理的数字
+                                i = k - 1;
+                                
+                                // 继续处理后续字符
+                                state = 0;
+                                inSpeedKey = false;
+                                break;
+                            } else {
+                                // 没有找到数字，恢复正常状态
+                                state = 0;
+                                inSpeedKey = false;
+                                result += ch;
+                            }
+                        } else if (ch === ',') {
+                            // C++代码中遇到逗号表示结束
+                            result += ch;
+                            state = 0;
+                            inSpeedKey = false;
+                        } else {
+                            result += ch;
+                        }
+                        break;
                 }
-                return modified;
+                
+                i++;
             }
             
-            // 如果是对象，检查是否有speed字段
-            if ('speed' in obj && typeof obj.speed === 'number') {
-                obj.speed = newSpeed;
-                return true;
-            }
-            
-            // 递归检查对象的每个属性
-            for (const key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    if (modifySpeedInObject(obj[key], newSpeed, `${path}.${key}`)) {
-                        modified = true;
-                    }
-                }
-            }
-            
-            return modified;
+            return result;
         }
         
-        // 更新速度
+        // 更新速度显示
         function updateSpeed() {
             speedMultiplier = parseFloat(speedSlider.value);
-            speedMultiplierValue.textContent = `${speedMultiplier.toFixed(1)}x`;
-            multiplierNumber.textContent = speedMultiplier.toFixed(1);
-            updateNewSpeed();
-        }
-        
-        // 更新新速度显示
-        function updateNewSpeed() {
+            speedValue.textContent = speedMultiplier.toFixed(2) + 'x';
+            multiplierValue.textContent = '×' + speedMultiplier.toFixed(2);
+            
             const newSpeed = originalSpeed * speedMultiplier;
             newSpeedSpan.textContent = newSpeed.toFixed(2);
         }
         
-        // 重置速度
-        function resetSpeed() {
-            speedSlider.value = 1.0;
-            updateSpeed();
+        // 开始动画
+        function startAnimation() {
+            updateAnimation();
         }
         
-        // 开始预览动画
-        function startPreview() {
-            if (isAnimating) {
-                stopPreview();
-                return;
-            }
+        // 更新动画
+        function updateAnimation() {
+            // 停止当前动画
+            note.classList.remove('animating');
             
-            isAnimating = true;
-            tapCircle.classList.add('animating');
-            
-            // 计算动画时间（速度越快，时间越短）
-            const baseTime = 2.0; // 基础时间（1x速度）
+            // 计算动画持续时间
+            const baseTime = 2.0; // 1x速度的基础时间
             const animationTime = baseTime / speedMultiplier;
             
-            tapCircle.style.animation = `fall ${animationTime}s linear infinite`;
-            previewBtn.innerHTML = '⏸️ 暂停动画';
-        }
-        
-        // 停止预览动画
-        function stopPreview() {
-            isAnimating = false;
-            tapCircle.classList.remove('animating');
-            tapCircle.style.animation = 'none';
-            previewBtn.innerHTML = '▶️ 预览动画';
-            
-            // 重置圆圈位置
-            setTimeout(() => {
-                tapCircle.style.top = '-50px';
-            }, 10);
-        }
-        
-        // 速度测试
-        function speedTest() {
-            stopPreview();
-            
-            // 测试不同速度
-            const testSpeeds = [0.5, 1.0, 2.0, 3.0];
-            let currentTest = 0;
-            
-            function testNextSpeed() {
-                if (currentTest >= testSpeeds.length) {
-                    speedSlider.value = 1.0;
-                    updateSpeed();
-                    showStatus('速度测试完成', 'success');
-                    return;
-                }
-                
-                const speed = testSpeeds[currentTest];
-                speedSlider.value = speed;
-                updateSpeed();
-                
-                showStatus(`测试速度: ${speed.toFixed(1)}x`, 'success');
-                
-                // 播放动画
-                isAnimating = true;
-                tapCircle.classList.add('animating');
-                const animationTime = 2.0 / speed;
-                tapCircle.style.animation = `fall ${animationTime}s linear 1`;
-                
-                // 动画结束后测试下一个速度
-                setTimeout(() => {
-                    stopPreview();
-                    currentTest++;
-                    setTimeout(testNextSpeed, 500);
-                }, animationTime * 1000);
-            }
-            
-            testNextSpeed();
+            // 立即开始新动画
+            note.style.animation = `fall ${animationTime}s linear infinite`;
+            note.classList.add('animating');
         }
         
         // 下载修改后的ZIP
@@ -751,11 +678,12 @@
                 return;
             }
             
-            showLoading(true);
+            downloadBtn.textContent = '处理中...';
+            downloadBtn.disabled = true;
             
             try {
                 // 创建ZIP副本
-                modifiedZip = new JSZip();
+                const modifiedZip = new JSZip();
                 
                 // 复制所有文件
                 const promises = [];
@@ -763,26 +691,19 @@
                     if (!file.dir) {
                         promises.push(
                             file.async('uint8array').then(content => {
-                                modifiedZip.file(relativePath, content);
+                                // 如果是找到的JSON文件，则修改
+                                if (relativePath === jsonFileName) {
+                                    const modifiedJson = modifySpeedWithCppLogic(jsonContent, speedMultiplier);
+                                    modifiedZip.file(relativePath, modifiedJson);
+                                } else {
+                                    modifiedZip.file(relativePath, content);
+                                }
                             })
                         );
                     }
                 });
                 
                 await Promise.all(promises);
-                
-                // 修改JSON文件中的速度
-                const newSpeed = originalSpeed * speedMultiplier;
-                const jsonModified = JSON.parse(JSON.stringify(jsonContent));
-                
-                const modified = modifySpeedInObject(jsonModified, newSpeed);
-                
-                if (!modified) {
-                    showStatus('未找到speed字段，文件内容未修改', 'error');
-                }
-                
-                // 更新ZIP中的JSON文件
-                modifiedZip.file(jsonFileName, JSON.stringify(jsonModified, null, 2));
                 
                 // 生成新的ZIP文件
                 const zipBlob = await modifiedZip.generateAsync({type: 'blob'});
@@ -791,52 +712,38 @@
                 const url = URL.createObjectURL(zipBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `modified_${fileInput.files[0].name.replace('.zip', '')}_${speedMultiplier.toFixed(1)}x.zip`;
+                a.download = `phigros_${speedMultiplier.toFixed(2)}x.zip`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 
-                showStatus(`下载成功！新速度: ${newSpeed.toFixed(2)} (${speedMultiplier.toFixed(1)}x)`, 'success');
+                showStatus(`下载成功！速度: ${(originalSpeed * speedMultiplier).toFixed(2)}`, 'success');
                 
             } catch (error) {
                 showStatus(`下载失败: ${error.message}`, 'error');
                 console.error(error);
             } finally {
-                showLoading(false);
-            }
-        }
-        
-        // 显示/隐藏加载动画
-        function showLoading(show) {
-            if (show) {
-                loading.classList.add('show');
-            } else {
-                loading.classList.remove('show');
+                downloadBtn.textContent = '下载修改后的ZIP文件';
+                downloadBtn.disabled = false;
             }
         }
         
         // 显示状态消息
-        function showStatus(message, type = 'info') {
-            statusMessage.textContent = message;
-            statusMessage.className = 'status-message show';
+        function showStatus(message, type = 'success') {
+            status.textContent = message;
+            status.className = `status show ${type}`;
             
-            if (type === 'success') {
-                statusMessage.classList.add('status-success');
-                statusMessage.classList.remove('status-error');
-            } else if (type === 'error') {
-                statusMessage.classList.add('status-error');
-                statusMessage.classList.remove('status-success');
-            }
-            
-            // 3秒后自动隐藏
             setTimeout(() => {
-                statusMessage.classList.remove('show');
-            }, 5000);
+                status.classList.remove('show');
+            }, 3000);
         }
         
         // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            downloadBtn.addEventListener('click', downloadModifiedZip);
+        });
     </script>
 </body>
 </html>
