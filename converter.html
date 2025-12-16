@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phigros按键转换器</title>
+    <link rel="stylesheet" href="common.css">
+</head>
+<body>
+    <div class="container">
+    <header>
+            <h1>Phigros按键转换器</h1>
+        </header>
+        
+        
+        <div class="main-content">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p>上传Phigros谱面ZIP文件</p>
+                <input type="file" id="fileInput" accept=".zip">
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>处理中...</p>
+            </div>
+            
+            <div class="controls-section" id="controlsSection">
+                <div class="file-info" id="fileInfo">
+                    <div class="info-item">
+                        <span>文件:</span>
+                        <span id="fileName">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>按键数:</span>
+                        <span id="noteCount">-</span>
+                    </div>
+                </div>
+                
+                <div class="conversion-controls">
+                    <div class="conversion-options">
+                        <button class="conversion-btn" data-type="tap">Tap</button>
+                        <button class="conversion-btn" data-type="drag">Drag</button>
+                        <button class="conversion-btn" data-type="hold">Hold</button>
+                        <button class="conversion-btn" data-type="flick">Flick</button>
+                    </div>
+                    
+                    <div class="hold-controls" id="holdControls">
+                        <div class="hold-option">
+                            <input type="checkbox" id="includeHold" checked>
+                            <label for="includeHold">包含Hold按键</label>
+                        </div>
+                        <div class="hold-length" id="holdLengthControl">
+                            <label>最小长度:</label>
+                            <input type="number" id="holdLength" value="200" min="50" max="1000">
+                            <span>ms</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="download-btn" id="downloadBtn" disabled>
+                    下载转换后的ZIP文件
+                </button>
+                
+                <div class="status" id="status"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>本工具完全在浏览器中运行，不会上传文件到服务器</p>
+        </footer>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        let originalZip = null
+        let jsonFileName = null
+        let chartData = null
+        let selectedType = 'tap'
+        
+        const uploadArea = document.getElementById('uploadArea')
+        const fileInput = document.getElementById('fileInput')
+        const loading = document.getElementById('loading')
+        const controlsSection = document.getElementById('controlsSection')
+        const downloadBtn = document.getElementById('downloadBtn')
+        const status = document.getElementById('status')
+        const holdControls = document.getElementById('holdControls')
+        const holdLengthControl = document.getElementById('holdLengthControl')
+        const includeHoldCheck = document.getElementById('includeHold')
+        const holdLengthInput = document.getElementById('holdLength')
+        
+        const fileNameSpan = document.getElementById('fileName')
+        const noteCountSpan = document.getElementById('noteCount')
+        
+        function init() {
+            uploadArea.addEventListener('click', () => fileInput.click())
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault()
+                uploadArea.style.borderColor = '#3498db'
+            })
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#bdc3c7'
+            })
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault()
+                uploadArea.style.borderColor = '#bdc3c7'
+                if (e.dataTransfer.files.length) {
+                    handleFileUpload(e.dataTransfer.files[0])
+                }
+            })
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileUpload(e.target.files[0])
+                }
+            })
+            
+            document.querySelectorAll('.conversion-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.conversion-btn').forEach(b => b.classList.remove('selected'))
+                    this.classList.add('selected')
+                    selectedType = this.dataset.type
+                    
+                    if (selectedType === 'hold') {
+                        holdLengthControl.style.display = 'flex'
+                        includeHoldCheck.style.display = 'none'
+                    } else {
+                        holdLengthControl.style.display = 'none'
+                        includeHoldCheck.style.display = 'flex'
+                    }
+                })
+            })
+            
+            document.querySelector('.conversion-btn[data-type="tap"]').click()
+            
+            downloadBtn.addEventListener('click', downloadConvertedZip)
+        }
+        
+        function getTypeValue(type) {
+            const values = { tap: 1, drag: 2, hold: 3, flick: 4 }
+            return values[type] || 1
+        }
+        
+        async function handleFileUpload(file) {
+            if (!file.name.toLowerCase().endsWith('.zip')) {
+                showStatus('请上传ZIP文件', 'error')
+                return
+            }
+            
+            loading.classList.add('show')
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer()
+                originalZip = await JSZip.loadAsync(arrayBuffer)
+                
+                const jsonFiles = []
+                originalZip.forEach((relativePath, fileEntry) => {
+                    if (!fileEntry.dir && relativePath.toLowerCase().endsWith('.json')) {
+                        jsonFiles.push(relativePath)
+                    }
+                })
+                
+                if (jsonFiles.length === 0) {
+                    throw new Error('ZIP文件中未找到JSON文件')
+                }
+                
+                jsonFileName = jsonFiles[0]
+                
+                const jsonFile = originalZip.file(jsonFileName)
+                if (!jsonFile) {
+                    throw new Error('无法读取JSON文件')
+                }
+                
+                const jsonText = await jsonFile.async('text')
+                chartData = JSON.parse(jsonText)
+                
+                const noteCount = countNotes(chartData)
+                
+                fileNameSpan.textContent = file.name
+                noteCountSpan.textContent = noteCount
+                
+                controlsSection.classList.add('show')
+                downloadBtn.disabled = false
+                
+                showStatus('成功加载谱面', 'success')
+                
+            } catch (error) {
+                showStatus('处理失败: ' + error.message, 'error')
+            } finally {
+                loading.classList.remove('show')
+            }
+        }
+        
+        function countNotes(chartData) {
+            let count = 0
+            if (chartData.judgeLineList) {
+                chartData.judgeLineList.forEach(line => {
+                    if (line.notes && Array.isArray(line.notes)) {
+                        count += line.notes.length
+                    }
+                })
+            }
+            return count
+        }
+        
+        function convertChartData() {
+            if (!chartData) return null
+            
+            const convertedData = JSON.parse(JSON.stringify(chartData))
+            const targetTypeValue = getTypeValue(selectedType)
+            const includeHold = includeHoldCheck.checked
+            const holdMinLength = parseInt(holdLengthInput.value) || 200
+            
+            convertedData.judgeLineList.forEach(judgeLine => {
+                if (judgeLine.notes && Array.isArray(judgeLine.notes)) {
+                    judgeLine.notes.forEach(note => {
+                        const shouldConvert = (note.type !== 3) || includeHold || selectedType === 'hold'
+                        
+                        if (shouldConvert) {
+                            if (selectedType === 'hold') {
+                                note.holdTime = (note.time || 0) + holdMinLength
+                            } else {
+                                if (note.holdTime !== undefined) {
+                                    delete note.holdTime
+                                }
+                            }
+                            note.type = targetTypeValue
+                        }
+                    })
+                }
+            })
+            
+            return convertedData
+        }
+        
+        async function downloadConvertedZip() {
+            if (!originalZip || !chartData) {
+                showStatus('请先上传ZIP文件', 'error')
+                return
+            }
+            
+            downloadBtn.textContent = '处理中...'
+            downloadBtn.disabled = true
+            
+            try {
+                const convertedData = convertChartData()
+                if (!convertedData) {
+                    throw new Error('转换失败')
+                }
+                
+                const modifiedZip = new JSZip()
+                
+                const promises = []
+                originalZip.forEach((relativePath, file) => {
+                    if (!file.dir) {
+                        promises.push(
+                            file.async('uint8array').then(content => {
+                                if (relativePath === jsonFileName) {
+                                    modifiedZip.file(relativePath, JSON.stringify(convertedData, null, 2))
+                                } else {
+                                    modifiedZip.file(relativePath, content)
+                                }
+                            })
+                        )
+                    }
+                })
+                
+                await Promise.all(promises)
+                
+                const zipBlob = await modifiedZip.generateAsync({type: 'blob'})
+                
+                const url = URL.createObjectURL(zipBlob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `converted_${selectedType}.zip`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+                
+                showStatus('下载成功', 'success')
+                
+            } catch (error) {
+                showStatus('下载失败: ' + error.message, 'error')
+            } finally {
+                downloadBtn.textContent = '下载转换后的ZIP文件'
+                downloadBtn.disabled = false
+            }
+        }
+        
+        function showStatus(message, type = 'success') {
+            status.textContent = message
+            status.className = `status show ${type}`
+            
+            setTimeout(() => {
+                status.classList.remove('show')
+            }, 3000)
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            init()
+        })
+    </script>
+</body>
+</html>
