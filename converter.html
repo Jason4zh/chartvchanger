@@ -270,7 +270,14 @@
                 
                 await Promise.all(promises)
                 
-                const zipBlob = await modifiedZip.generateAsync({type: 'blob'})
+                // 修改这里：添加最高压缩率选项
+                const zipBlob = await modifiedZip.generateAsync({
+                    type: 'blob',
+                    compression: "DEFLATE",
+                    compressionOptions: {
+                        level: 9  // 最高压缩级别
+                    }
+                })
                 
                 const url = URL.createObjectURL(zipBlob)
                 const a = document.createElement('a')
