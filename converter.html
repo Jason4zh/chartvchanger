@@ -217,34 +217,41 @@
             const includeHold = includeHoldCheck.checked
             const holdMinLength = parseInt(holdLengthInput.value) || 200
             
-            let notesConverted = 0
-            let holdsSkipped = 0
+            // 调试信息
+            console.log(`开始转换: 目标类型=${selectedType}(${targetTypeValue}), 包含Hold=${includeHold}`)
+            
+            let convertedCount = 0
+            let holdSkippedCount = 0
+            let flickConvertedCount = 0
             
             convertedData.judgeLineList.forEach(judgeLine => {
                 if (judgeLine.notes && Array.isArray(judgeLine.notes)) {
                     judgeLine.notes.forEach(note => {
-                        // 记录原始类型用于调试
                         const originalType = note.type
                         
-                        // 处理Hold键：只有在不包含Hold时才跳过
-                        if (note.type === 3 && !includeHold) {
-                            holdsSkipped++
-                            return // 跳过这个Hold，不做任何修改
+                        // 核心修复：正确理解"包含Hold按键"的含义
+                        // 如果"包含Hold按键"未勾选，我们跳过所有Hold按键
+                        // 如果"包含Hold按键"已勾选，我们处理所有按键，包括Hold
+                        if (originalType === 3 && !includeHold) {
+                            // Hold按键且不包含Hold：跳过，不做任何处理
+                            holdSkippedCount++
+                            console.log(`跳过Hold按键: 时间=${note.time}, 类型=3(Hold)`)
+                            return
                         }
                         
-                        // 对于需要转换的按键
-                        notesConverted++
+                        // 记录Flick转换情况
+                        if (originalType === 4) {
+                            flickConvertedCount++
+                            console.log(`转换Flick按键: 时间=${note.time}, 类型=4(Flick) -> ${targetTypeValue}`)
+                        }
+                        
+                        // 对于需要转换的按键（包括Flick）
+                        convertedCount++
                         
                         // 转换为Hold类型
                         if (selectedType === 'hold') {
-                            // 对于原来是Tap、Drag、Flick的按键，添加holdTime
-                            if (originalType !== 3) { // 原来不是Hold
-                                note.holdTime = (note.time || 0) + holdMinLength
-                            } else if (originalType === 3) { // 原来是Hold，确保有holdTime
-                                if (!note.holdTime) {
-                                    note.holdTime = (note.time || 0) + holdMinLength
-                                }
-                            }
+                            // 添加或修改holdTime
+                            note.holdTime = (note.time || 0) + holdMinLength
                         } else {
                             // 转换为非Hold类型：删除holdTime属性
                             if (note.holdTime !== undefined) {
@@ -252,17 +259,14 @@
                             }
                         }
                         
-                        // 设置目标类型
+                        // 修改类型为目标类型
                         note.type = targetTypeValue
-                        
-                        // 调试输出（需要时可取消注释）
-                        // console.log(`转换: 原始类型${originalType} -> 目标类型${targetTypeValue} (时间: ${note.time})`)
                     })
                 }
             })
             
-            // 调试输出
-            console.log(`转换完成: 转换了${notesConverted}个按键，跳过了${holdsSkipped}个Hold`)
+            // 输出转换统计
+            console.log(`转换完成: 共转换${convertedCount}个按键, 跳过${holdSkippedCount}个Hold, 其中Flick转换了${flickConvertedCount}个`)
             
             return convertedData
         }
@@ -280,6 +284,14 @@
                 const convertedData = convertChartData()
                 if (!convertedData) {
                     throw new Error('转换失败')
+                }
+                
+                // 调试：检查转换后的数据
+                console.log("转换后的谱面数据示例（前5个按键）:");
+                if (convertedData.judgeLineList && convertedData.judgeLineList[0] && convertedData.judgeLineList[0].notes) {
+                    convertedData.judgeLineList[0].notes.slice(0, 5).forEach((note, i) => {
+                        console.log(`按键${i+1}: 时间=${note.time}, 类型=${note.type}`);
+                    });
                 }
                 
                 const modifiedZip = new JSZip()
