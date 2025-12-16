@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phigros按键转换器</title>
+    <link rel="stylesheet" href="common.css">
+</head>
+<body>
+    <div class="container">
+    <header>
+            <h1>Phigros按键转换器</h1>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p>上传Phigros谱面ZIP文件</p>
+                <input type="file" id="fileInput" accept=".zip">
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>处理中...</p>
+            </div>
+            
+            <div class="controls-section" id="controlsSection">
+                <div class="file-info" id="fileInfo">
+                    <div class="info-item">
+                        <span>文件:</span>
+                        <span id="fileName">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>按键数:</span>
+                        <span id="noteCount">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>formatVersion:</span>
+                        <span id="formatVersion">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>判定线数:</span>
+                        <span id="judgeLineCount">-</span>
+                    </div>
+                </div>
+                
+                <div class="conversion-controls">
+                    <div class="conversion-options">
+                        <button class="conversion-btn" data-type="tap">Tap</button>
+                        <button class="conversion-btn" data-type="drag">Drag</button>
+                        <button class="conversion-btn" data-type="hold">Hold</button>
+                        <button class="conversion-btn" data-type="flick">Flick</button>
+                    </div>
+                    
+                    <div class="hold-controls" id="holdControls">
+                        <div class="hold-option">
+                            <input type="checkbox" id="includeHold" checked>
+                            <label for="includeHold">包含Hold按键</label>
+                        </div>
+                        <div class="hold-length" id="holdLengthControl">
+                            <label>最小长度:</label>
+                            <input type="number" id="holdLength" value="200" min="50" max="1000">
+                            <span>ms</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="download-btn" id="downloadBtn" disabled>
+                    下载转换后的ZIP文件
+                </button>
+                
+                <div class="status" id="status"></div>
+                
+                <!-- 新增：调试信息区域 -->
+                <div class="debug-info" id="debugInfo" style="display: none; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px; font-family: monospace; font-size: 12px;">
+                    <h4 style="margin-bottom: 10px;">调试信息</h4>
+                    <div id="debugContent"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>本工具完全在浏览器中运行，不会上传文件到服务器</p>
+        </footer>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        let originalZip = null
+        let jsonFileName = null
+        let chartData = null
+        let selectedType = 'tap'
+        let originalFileName = ''
+        
+        const uploadArea = document.getElementById('uploadArea')
+        const fileInput = document.getElementById('fileInput')
+        const loading = document.getElementById('loading')
+        const controlsSection = document.getElementById('controlsSection')
+        const downloadBtn = document.getElementById('downloadBtn')
+        const status = document.getElementById('status')
+        const holdControls = document.getElementById('holdControls')
+        const holdLengthControl = document.getElementById('holdLengthControl')
+        const includeHoldCheck = document.getElementById('includeHold')
+        const holdLengthInput = document.getElementById('holdLength')
+        
+        const fileNameSpan = document.getElementById('fileName')
+        const noteCountSpan = document.getElementById('noteCount')
+        const formatVersionSpan = document.getElementById('formatVersion')
+        const judgeLineCountSpan = document.getElementById('judgeLineCount')
+        const debugInfo = document.getElementById('debugInfo')
+        const debugContent = document.getElementById('debugContent')
+        
+        function init() {
+            uploadArea.addEventListener('click', () => fileInput.click())
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault()
+                uploadArea.style.borderColor = '#3498db'
+            })
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#bdc3c7'
+            })
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault()
+                uploadArea.style.borderColor = '#bdc3c7'
+                if (e.dataTransfer.files.length) {
+                    handleFileUpload(e.dataTransfer.files[0])
+                }
+            })
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileUpload(e.target.files[0])
+                }
+            })
+            
+            document.querySelectorAll('.conversion-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.conversion-btn').forEach(b => b.classList.remove('selected'))
+                    this.classList.add('selected')
+                    selectedType = this.dataset.type
+                    
+                    if (selectedType === 'hold') {
+                        holdLengthControl.style.display = 'flex'
+                        includeHoldCheck.style.display = 'none'
+                    } else {
+                        holdLengthControl.style.display = 'none'
+                        includeHoldCheck.style.display = 'flex'
+                    }
+                })
+            })
+            
+            document.querySelector('.conversion-btn[data-type="tap"]').click()
+            
+            downloadBtn.addEventListener('click', downloadConvertedZip)
+        }
+        
+        function getTypeValue(type) {
+            const values = { tap: 1, drag: 2, hold: 3, flick: 4 }
+            return values[type] || 1
+        }
+        
+        async function handleFileUpload(file) {
+            if (!file.name.toLowerCase().endsWith('.zip')) {
+                showStatus('请上传ZIP文件', 'error')
+                return
+            }
+            
+            loading.classList.add('show')
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer()
+                originalZip = await JSZip.loadAsync(arrayBuffer)
+                
+                originalFileName = file.name.replace(/\.zip$/i, '')
+                
+                const jsonFiles = []
+                originalZip.forEach((relativePath, fileEntry) => {
+                    if (!fileEntry.dir && relativePath.toLowerCase().endsWith('.json')) {
+                        jsonFiles.push(relativePath)
+                    }
+                })
+                
+                if (jsonFiles.length === 0) {
+                    throw new Error('ZIP文件中未找到JSON文件')
+                }
+                
+                jsonFileName = jsonFiles[0]
+                
+                const jsonFile = originalZip.file(jsonFileName)
+                if (!jsonFile) {
+                    throw new Error('无法读取JSON文件')
+                }
+                
+                const jsonText = await jsonFile.async('text')
+                chartData = JSON.parse(jsonText)
+                
+                // 显示详细的谱面信息
+                const noteCount = countNotes(chartData)
+                const judgeLineCount = chartData.judgeLineList ? chartData.judgeLineList.length : 0
+                
+                fileNameSpan.textContent = file.name
+                noteCountSpan.textContent = noteCount
+                formatVersionSpan.textContent = chartData.formatVersion || '未知'
+                judgeLineCountSpan.textContent = judgeLineCount
+                
+                // 显示调试信息
+                showDebugInfo('原始谱面加载成功', {
+                    '文件名': file.name,
+                    'formatVersion': chartData.formatVersion,
+                    '判定线数量': judgeLineCount,
+                    '总按键数': noteCount,
+                    'JSON文件': jsonFileName
+                })
+                
+                // 分析谱面结构
+                analyzeChartStructure(chartData)
+                
+                controlsSection.classList.add('show')
+                debugInfo.style.display = 'block'
+                downloadBtn.disabled = false
+                
+                showStatus('成功加载谱面', 'success')
+                
+            } catch (error) {
+                showStatus('处理失败: ' + error.message, 'error')
+                showDebugInfo('加载失败', { '错误': error.message })
+            } finally {
+                loading.classList.remove('show')
+            }
+        }
+        
+        function countNotes(chartData) {
+            let count = 0
+            if (chartData.judgeLineList) {
+                chartData.judgeLineList.forEach((line, index) => {
+                    // 检查多个可能的notes位置
+                    const notes = line.notesAbove || line.notesBelow || line.notes
+                    if (notes && Array.isArray(notes)) {
+                        count += notes.length
+                    }
+                })
+            }
+            return count
+        }
+        
+        function analyzeChartStructure(chartData) {
+            const structureInfo = []
+            
+            if (!chartData.judgeLineList || !Array.isArray(chartData.judgeLineList)) {
+                structureInfo.push('❌ 未找到judgeLineList或不是数组')
+                return
+            }
+            
+            chartData.judgeLineList.forEach((line, lineIndex) => {
+                structureInfo.push(`判定线 ${lineIndex + 1}:`)
+                
+                // 检查各种可能的notes字段
+                const possibleNoteFields = ['notes', 'notesAbove', 'notesBelow', 'note', 'Note', 'Notes']
+                let foundNotes = false
+                
+                for (const field of possibleNoteFields) {
+                    if (line[field] && Array.isArray(line[field])) {
+                        structureInfo.push(`  ✓ 找到 ${field}: ${line[field].length} 个按键`)
+                        foundNotes = true
+                        
+                        // 显示前几个按键的类型
+                        const sampleNotes = line[field].slice(0, 3)
+                        sampleNotes.forEach((note, noteIndex) => {
+                            structureInfo.push(`     按键 ${noteIndex + 1}: type=${note.type}, time=${note.time}`)
+                        })
+                        if (line[field].length > 3) {
+                            structureInfo.push(`     ... 还有 ${line[field].length - 3} 个按键`)
+                        }
+                    }
+                }
+                
+                if (!foundNotes) {
+                    structureInfo.push(`  ❌ 未找到notes数组`)
+                    // 显示该对象的所有键
+                    structureInfo.push(`     可用字段: ${Object.keys(line).join(', ')}`)
+                }
+            })
+            
+            showDebugInfo('谱面结构分析', structureInfo)
+        }
+        
+        function convertChartData() {
+    if (!chartData) return null
+
+    const convertedData = JSON.parse(JSON.stringify(chartData))
+    const targetTypeValue = getTypeValue(selectedType)
+    const includeHold = includeHoldCheck.checked
+    const holdMinLength = parseInt(holdLengthInput.value) || 200
+
+    let totalConverted = 0
+    let totalSkipped = 0
+    const conversionLog = []
+
+    if (!convertedData.judgeLineList || !Array.isArray(convertedData.judgeLineList)) {
+        conversionLog.push('❌ 错误: 没有找到judgeLineList')
+        showDebugInfo('转换错误', conversionLog)
+        return convertedData
+    }
+
+    convertedData.judgeLineList.forEach((judgeLine, lineIndex) => {
+        conversionLog.push(`处理判定线 ${lineIndex + 1}:`)
+
+        const noteFields = ['notes', 'notesAbove', 'notesBelow']
+        let notesFound = false
+
+        for (const field of noteFields) {
+            if (judgeLine[field] && Array.isArray(judgeLine[field])) {
+                notesFound = true
+                const notes = judgeLine[field]
+                conversionLog.push(`  在字段"${field}"中找到 ${notes.length} 个按键`)
+
+                let lineConverted = 0
+                let lineSkipped = 0
+
+                notes.forEach((note, noteIndex) => {
+                    const originalType = note.type
+
+                    // 如果当前是 Hold 且未勾选“包含 Hold”，则跳过
+                    if (originalType === 3 && !includeHold) {
+                        lineSkipped++
+                        totalSkipped++
+                        return
+                    }
+
+                    // 如果当前类型已经是目标类型，跳过
+                    if (originalType === targetTypeValue) {
+                        return
+                    }
+
+                    // 执行转换
+                    lineConverted++
+                    totalConverted++
+
+                    // 设置或删除 holdTime
+                    if (selectedType === 'hold') {
+                        note.holdTime = (note.time || 0) + holdMinLength
+                    } else {
+                        if (note.hasOwnProperty('holdTime')) {
+                            delete note.holdTime
+                        }
+                    }
+
+                    // 修改类型
+                    note.type = targetTypeValue
+
+                    // 记录前几个按键的转换详情
+                    if (noteIndex < 3) {
+                        const typeNames = { 1: 'Tap', 2: 'Drag', 3: 'Hold', 4: 'Flick' }
+                        const originalName = typeNames[originalType] || `未知(${originalType})`
+                        const targetName = typeNames[targetTypeValue] || `未知(${targetTypeValue})`
+                        conversionLog.push(`    按键 ${noteIndex + 1}: ${originalName} -> ${targetName}, time=${note.time}`)
+                    }
+                })
+
+                conversionLog.push(`    转换结果: 转换了${lineConverted}个, 跳过了${lineSkipped}个`)
+            }
+        }
+
+        if (!notesFound) {
+            conversionLog.push(`  ⚠️ 未找到notes数组`)
+        }
+    })
+
+    conversionLog.push(`总计: 转换了${totalConverted}个按键, 跳过了${totalSkipped}个Hold`)
+
+    if (convertedData.numOfNotes !== undefined) {
+        const newTotal = totalConverted + totalSkipped
+        if (newTotal > 0) {
+            convertedData.numOfNotes = newTotal
+            conversionLog.push(`更新了numOfNotes字段: ${newTotal}`)
+        }
+    }
+
+    if (chartData.formatVersion) {
+        convertedData.formatVersion = chartData.formatVersion
+        conversionLog.push(`保持formatVersion: ${chartData.formatVersion}`)
+    }
+
+    showDebugInfo('转换过程详情', conversionLog)
+    return convertedData
+}
+
+        
+        async function downloadConvertedZip() {
+            if (!originalZip || !chartData) {
+                showStatus('请先上传ZIP文件', 'error')
+                return
+            }
+            
+            downloadBtn.textContent = '处理中...'
+            downloadBtn.disabled = true
+            
+            try {
+                const convertedData = convertChartData()
+                if (!convertedData) {
+                    throw new Error('转换失败')
+                }
+                
+                // 验证转换后的数据
+                const validationLog = ['验证转换后的数据:']
+                const finalNoteCount = countNotes(convertedData)
+                validationLog.push(`按键总数: ${finalNoteCount}`)
+                
+                // 检查几个示例按键
+                if (convertedData.judgeLineList && convertedData.judgeLineList[0]) {
+                    const noteFields = ['notes', 'notesAbove', 'notesBelow']
+                    for (const field of noteFields) {
+                        if (convertedData.judgeLineList[0][field] && 
+                            Array.isArray(convertedData.judgeLineList[0][field]) &&
+                            convertedData.judgeLineList[0][field].length > 0) {
+                            
+                            const sample = convertedData.judgeLineList[0][field][0]
+                            validationLog.push(`示例按键: type=${sample.type}, time=${sample.time}`)
+                            
+                            // 显示前3个按键的类型
+                            convertedData.judgeLineList[0][field].slice(0, 3).forEach((note, i) => {
+                                validationLog.push(`  按键${i+1}: type=${note.type}${note.holdTime ? `, holdTime=${note.holdTime}` : ''}`)
+                            })
+                            break
+                        }
+                    }
+                }
+                
+                showDebugInfo('转换验证', validationLog)
+                
+                const modifiedZip = new JSZip()
+                
+                const promises = []
+                originalZip.forEach((relativePath, file) => {
+                    if (!file.dir) {
+                        promises.push(
+                            file.async('uint8array').then(content => {
+                                if (relativePath === jsonFileName) {
+                                    // 使用紧凑的JSON格式，避免不必要空格
+                                    modifiedZip.file(relativePath, JSON.stringify(convertedData))
+                                } else {
+                                    modifiedZip.file(relativePath, content)
+                                }
+                            })
+                        )
+                    }
+                })
+                
+                await Promise.all(promises)
+                
+                const zipBlob = await modifiedZip.generateAsync({
+                    type: 'blob',
+                    compression: "DEFLATE",
+                    compressionOptions: {
+                        level: 9
+                    }
+                })
+                
+                const url = URL.createObjectURL(zipBlob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `${originalFileName}_${selectedType}.zip`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+                
+                showStatus(`下载成功！转换了${finalNoteCount}个按键`, 'success')
+                
+            } catch (error) {
+                showStatus('下载失败: ' + error.message, 'error')
+                showDebugInfo('下载错误', { '错误': error.message })
+            } finally {
+                downloadBtn.textContent = '下载转换后的ZIP文件'
+                downloadBtn.disabled = false
+            }
+        }
+        
+        function showDebugInfo(title, content) {
+            debugContent.innerHTML = `<strong>${title}:</strong><br>`
+            
+            if (Array.isArray(content)) {
+                content.forEach(line => {
+                    debugContent.innerHTML += line + '<br>'
+                })
+            } else if (typeof content === 'object') {
+                for (const [key, value] of Object.entries(content)) {
+                    debugContent.innerHTML += `${key}: ${value}<br>`
+                }
+            } else {
+                debugContent.innerHTML += content
+            }
+        }
+        
+        function showStatus(message, type = 'success') {
+            status.textContent = message
+            status.className = `status show ${type}`
+            
+            setTimeout(() => {
+                status.classList.remove('show')
+            }, 5000)
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            init()
+        })
+    </script>
+</body>
+</html>
